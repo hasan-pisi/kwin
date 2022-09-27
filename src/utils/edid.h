@@ -14,6 +14,8 @@
 #include <QByteArray>
 #include <QSize>
 
+struct di_info;
+
 namespace KWin
 {
 

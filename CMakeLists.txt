@@ -366,6 +366,8 @@ set_package_properties(QAccessibilityClient PROPERTIES
 )
 set(HAVE_ACCESSIBILITY ${QAccessibilityClient_FOUND})
 
+pkg_search_module(libdisplayinfo REQUIRED IMPORTED_TARGET display-info)
+
 ecm_find_qmlmodule(QtQuick 2.3)
 ecm_find_qmlmodule(QtQuick.Controls 2.15)
 ecm_find_qmlmodule(QtQuick.Layouts 1.3)
