@@ -90,7 +90,6 @@ protected:
 
 private:
     EGLContext ensureGlobalShareContext();
-    void destroyGlobalShareContext();
     EGLContext createContextInternal(EGLContext sharedContext);
 
     void teardown();
