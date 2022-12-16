@@ -1581,7 +1581,7 @@ void Window::setMaximize(bool vertically, bool horizontally)
     if (horizontally) {
         mode = MaximizeMode(mode | MaximizeHorizontal);
     }
-    setTile(nullptr);
+
     maximize(mode);
 }
 
@@ -3808,7 +3808,6 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
     GeometryUpdatesBlocker blocker(this);
 
     const QuickTileMode oldMode = quickTileMode();
-    setTile(nullptr);
 
     QPointF whichScreen = keyboard ? moveResizeGeometry().center() : Cursors::self()->mouse()->pos();
 
@@ -3817,7 +3816,6 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
             setMaximize(false, false);
         } else {
             QRectF effectiveGeometryRestore = quickTileGeometryRestore();
-            Output *output = workspace()->outputAt(whichScreen);
             setMaximize(true, true);
             setGeometryRestore(effectiveGeometryRestore);
         }
@@ -3836,16 +3834,15 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
 
     // restore from maximized so that it is possible to tile maximized windows with one hit or by dragging
     if (requestedMaximizeMode() != MaximizeRestore) {
+        Output *output = workspace()->outputAt(whichScreen);
         if (mode != QuickTileMode(QuickTileFlag::None)) {
             setMaximize(false, false);
-
             moveResize(quickTileGeometry(mode, keyboard ? moveResizeGeometry().center() : Cursors::self()->mouse()->pos()));
         } else {
             setMaximize(false, false);
         }
 
         if (mode != QuickTileMode(QuickTileFlag::Custom)) {
-            Output *output = workspace()->outputAt(whichScreen);
             Tile *tile = workspace()->tileManager(output)->quickTile(mode);
             setTile(tile);
         }
@@ -3930,16 +3927,7 @@ QuickTileMode Window::quickTileMode() const
     if (m_tile) {
         return m_tile->quickTileMode();
     } else {
-        switch (maximizeMode()) {
-        case MaximizeVertical:
-            return QuickTileFlag::Vertical;
-        case MaximizeHorizontal:
-            return QuickTileFlag::Horizontal;
-        case MaximizeFull:
-            return QuickTileFlag::Horizontal | QuickTileFlag::Vertical;
-        default:
-            return QuickTileFlag::None;
-        }
+        return QuickTileFlag::None;
     }
 }
 
