@@ -138,6 +138,11 @@ Q_SIGNALS:
     void framePresented(RenderLoop *loop, std::chrono::nanoseconds timestamp);
 
     /**
+     * This signal is emitted when a frame has been fail to present on the screen.
+     */
+    void frameFailed();
+
+    /**
      * This signal is emitted when the render loop wants a new frame to be composited.
      *
      * The Compositor should make a connection to this signal using Qt::DirectConnection.

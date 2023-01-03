@@ -14,6 +14,7 @@
 #include "idleinhibit_v1_interface_p.h"
 #include "linuxdmabufv1clientbuffer.h"
 #include "pointerconstraints_v1_interface_p.h"
+#include "presentation_time_interface.h"
 #include "region_interface_p.h"
 #include "subcompositor_interface.h"
 #include "subsurface_interface_p.h"
@@ -44,6 +45,7 @@ SurfaceInterfacePrivate::SurfaceInterfacePrivate(SurfaceInterface *q)
     wl_list_init(&current.frameCallbacks);
     wl_list_init(&pending.frameCallbacks);
     wl_list_init(&cached.frameCallbacks);
+    this->feedbacks = new PresentationFeedbacks(q);
 }
 
 SurfaceInterfacePrivate::~SurfaceInterfacePrivate()
@@ -347,6 +349,11 @@ void SurfaceInterfacePrivate::surface_damage_buffer(Resource *resource, int32_t 
 void SurfaceInterfacePrivate::surface_offset(Resource *resource, int32_t x, int32_t y)
 {
     pending.offset = QPoint(x, y);
+}
+
+void SurfaceInterfacePrivate::addPresentationFeedback(PresentationFeedbackInterface *feedback) const
+{
+    this->feedbacks->add(feedback);
 }
 
 SurfaceInterface::SurfaceInterface(CompositorInterface *compositor, wl_resource *resource)
@@ -900,6 +907,16 @@ QVector<OutputInterface *> SurfaceInterface::outputs() const
     return d->outputs;
 }
 
+void SurfaceInterface::setLargestOutput(OutputInterface *output)
+{
+    d->largestOutput = output;
+
+    // Use the largest output for feedback
+    if (output != nullptr && d->feedbacks->output() == nullptr) {
+        d->feedbacks->setOutput(output);
+    }
+}
+
 void SurfaceInterface::setOutputs(const QVector<OutputInterface *> &outputs)
 {
     QVector<OutputInterface *> removedOutputs = d->outputs;
@@ -911,6 +928,7 @@ void SurfaceInterface::setOutputs(const QVector<OutputInterface *> &outputs)
         const auto resources = (*it)->clientResources(client());
         for (wl_resource *outputResource : resources) {
             d->send_leave(outputResource);
+            d->feedbacks->unsetOutput(*it);
         }
         disconnect(d->outputDestroyedConnections.take(*it));
         disconnect(d->outputBoundConnections.take(*it));
