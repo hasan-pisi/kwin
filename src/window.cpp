@@ -1582,7 +1582,6 @@ void Window::setMaximize(bool vertically, bool horizontally)
         mode = MaximizeMode(mode | MaximizeHorizontal);
     }
     setTile(nullptr);
-
     maximize(mode);
 }
 
