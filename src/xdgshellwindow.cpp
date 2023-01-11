@@ -1647,6 +1647,7 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
         return;
     }
 
+    const auto oldQuickTileMode = quickTileMode();
     const QRectF clientArea = isElectricBorderMaximizing() ? workspace()->clientArea(MaximizeArea, this, Cursors::self()->mouse()->pos()) : workspace()->clientArea(MaximizeArea, this, moveResizeOutput());
 
     const MaximizeMode oldMode = m_requestedMaximizeMode;
@@ -1732,7 +1733,6 @@ void XdgToplevelWindow::maximize(MaximizeMode mode)
         }
     }
 
-    const auto oldQuickTileMode = quickTileMode();
     if (m_requestedMaximizeMode == MaximizeFull) {
         if (options->electricBorderMaximize()) {
             updateQuickTileMode(QuickTileFlag::Maximize);
