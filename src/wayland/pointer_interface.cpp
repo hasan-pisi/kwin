@@ -214,7 +214,7 @@ static bool shouldResetAccumulator(int accumulator, int delta)
     return accumulator && (accumulator < 0 != delta < 0);
 }
 
-void PointerInterface::sendAxis(Qt::Orientation orientation, qreal delta, qint32 deltaV120, PointerAxisSource source)
+void PointerInterface::sendAxis(Qt::Orientation orientation, qreal delta, qint32 deltaV120, PointerAxisSource source, PointerAxisRelativeDirection direction)
 {
     if (!d->focusedSurface) {
         return;
@@ -279,6 +279,14 @@ void PointerInterface::sendAxis(Qt::Orientation orientation, qreal delta, qint32
             d->send_axis(resource->handle, d->seat->timestamp().count(), wlOrientation, wl_fixed_from_double(delta));
         } else if (version >= WL_POINTER_AXIS_STOP_SINCE_VERSION) {
             d->send_axis_stop(resource->handle, d->seat->timestamp().count(), wlOrientation);
+        }
+
+        if (version >= WL_POINTER_AXIS_RELATIVE_DIRECTION_SINCE_VERSION) {
+            if (direction == PointerAxisRelativeDirection::Normal) {
+                d->send_axis_relative_direction(resource->handle, PointerInterfacePrivate::axis_vertical_scroll, PointerInterfacePrivate::axis_relative_direction_identical);
+            } else {
+                d->send_axis_relative_direction(resource->handle, PointerInterfacePrivate::axis_vertical_scroll, PointerInterfacePrivate::axis_relative_direction_inverted);
+            }
         }
     }
 }
