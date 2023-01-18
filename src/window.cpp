@@ -3819,7 +3819,6 @@ void Window::setQuickTileMode(QuickTileMode mode, bool keyboard)
             setMaximize(true, true);
             setGeometryRestore(effectiveGeometryRestore);
         }
-        doSetQuickTileMode();
 
         return;
     }
