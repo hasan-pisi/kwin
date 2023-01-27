@@ -370,6 +370,28 @@ private:
     libinput_event_tablet_pad *m_tabletPadEvent;
 };
 
+class TabletPadDialEvent : public Event
+{
+public:
+    TabletPadDialEvent(libinput_event *event, libinput_event_type type);
+
+    int position() const
+    {
+        return libinput_event_tablet_pad_get_dial_value(m_tabletPadEvent);
+    }
+    int number() const
+    {
+        return libinput_event_tablet_pad_get_dial_number(m_tabletPadEvent);
+    }
+    quint32 time() const
+    {
+        return static_cast<quint32>(libinput_event_tablet_pad_get_time_usec(m_tabletPadEvent));
+    }
+
+private:
+    libinput_event_tablet_pad *m_tabletPadEvent;
+};
+
 class TabletPadStripEvent : public Event
 {
 public:

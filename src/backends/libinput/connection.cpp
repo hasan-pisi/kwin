@@ -556,6 +556,17 @@ void Connection::processEvents()
                                                         createTabletPadId(event->device()), tabletEvent->time());
             break;
         }
+        case LIBINPUT_EVENT_TABLET_PAD_DIAL: {
+            auto *tabletEvent = static_cast<TabletPadDialEvent *>(event.get());
+
+            Q_EMIT event->device()->pointerAxisChanged(InputRedirection::PointerAxis::PointerAxisVertical,
+                                                       tabletEvent->position(),
+                                                       tabletEvent->position() * 120,
+                                                       InputRedirection::PointerAxisSourceWheel,
+                                                       tabletEvent->time(),
+                                                       tabletEvent->device());
+            break;
+        }
         default:
             // nothing
             break;
