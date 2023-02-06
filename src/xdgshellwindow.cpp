@@ -1235,7 +1235,7 @@ void XdgToplevelWindow::handleFullscreenRequested(OutputInterface *output)
 {
     m_fullScreenRequestedOutput = output ? output->handle() : nullptr;
     if (m_isInitialized) {
-        setFullScreen(/* set */ true, /* user */ false);
+        setFullScreen(true);
         scheduleConfigure();
     } else {
         m_initialStates |= XdgToplevelInterface::State::FullScreen;
@@ -1246,7 +1246,7 @@ void XdgToplevelWindow::handleUnfullscreenRequested()
 {
     m_fullScreenRequestedOutput.clear();
     if (m_isInitialized) {
-        setFullScreen(/* set */ false, /* user */ false);
+        setFullScreen(false);
         scheduleConfigure();
     } else {
         m_initialStates &= ~XdgToplevelInterface::State::FullScreen;
@@ -1373,7 +1373,7 @@ void XdgToplevelWindow::initialize()
     }
 
     maximize(rules()->checkMaximize(initialMaximizeMode(), true));
-    setFullScreen(rules()->checkFullScreen(initialFullScreenMode(), true), false);
+    setFullScreen(rules()->checkFullScreen(initialFullScreenMode(), true));
     setOnActivities(rules()->checkActivity(activities(), true));
     setDesktops(rules()->checkDesktops(desktops(), true));
     setDesktopFileName(rules()->checkDesktopFile(desktopFileName(), true));
@@ -1595,7 +1595,7 @@ void XdgToplevelWindow::installPalette(ServerSideDecorationPaletteInterface *pal
     updateColorScheme();
 }
 
-void XdgToplevelWindow::setFullScreen(bool set, bool user)
+void XdgToplevelWindow::setFullScreen(bool set)
 {
     set = rules()->checkFullScreen(set);
     if (m_isRequestedFullScreen == set) {
@@ -1604,7 +1604,7 @@ void XdgToplevelWindow::setFullScreen(bool set, bool user)
     if (isSpecialWindow()) {
         return;
     }
-    if (user && !userCanSetFullScreen()) {
+    if (!userCanSetFullScreen()) {
         return;
     }
 

@@ -2285,7 +2285,7 @@ void Window::setupWindowManagementInterface()
         performMouseCommand(Options::MouseResize, Cursors::self()->mouse()->pos());
     });
     connect(w, &PlasmaWindowInterface::fullscreenRequested, this, [this](bool set) {
-        setFullScreen(set, false);
+        setFullScreen(set);
     });
     connect(w, &PlasmaWindowInterface::minimizedRequested, this, [this](bool set) {
         if (set) {
@@ -4329,9 +4329,8 @@ bool Window::userCanSetFullScreen() const
  * Default implementation does nothing.
  *
  * @param set @c true if the Window has to be shown in full screen mode, otherwise @c false
- * @param user @c true if the request is initiated by the user, otherwise @c false
  */
-void Window::setFullScreen(bool set, bool user)
+void Window::setFullScreen(bool set)
 {
     qCWarning(KWIN_CORE, "%s doesn't support setting fullscreen state", metaObject()->className());
 }
@@ -4496,7 +4495,7 @@ void Window::applyWindowRules()
     setSkipSwitcher(skipSwitcher());
     setKeepAbove(keepAbove());
     setKeepBelow(keepBelow());
-    setFullScreen(isRequestedFullScreen(), true);
+    setFullScreen(isRequestedFullScreen());
     setNoBorder(noBorder());
     updateColorScheme();
     // FSP

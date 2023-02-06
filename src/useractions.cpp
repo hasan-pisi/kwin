@@ -1262,7 +1262,7 @@ void Workspace::performWindowOperation(Window *window, Options::WindowOperation 
         window->setOnAllDesktops(!window->isOnAllDesktops());
         break;
     case Options::FullScreenOp:
-        window->setFullScreen(!window->isFullScreen(), true);
+        window->setFullScreen(!window->isFullScreen());
         break;
     case Options::NoBorderOp:
         if (window->userCanSetNoBorder()) {

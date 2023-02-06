@@ -879,7 +879,7 @@ bool X11Window::manage(xcb_window_t w, bool isMapped)
             maximize(MaximizeMode(session->maximized));
         }
         if (session->fullscreen != FullScreenNone) {
-            setFullScreen(true, false);
+            setFullScreen(true);
             setFullscreenGeometryRestore(session->fsrestore);
         }
         QRectF checkedGeometryRestore = geometryRestore();
@@ -918,7 +918,7 @@ bool X11Window::manage(xcb_window_t w, bool isMapped)
         }
         setOpacity(info->opacityF());
 
-        setFullScreen(rules()->checkFullScreen(info->state() & NET::FullScreen, !isMapped), false);
+        setFullScreen(rules()->checkFullScreen(info->state() & NET::FullScreen, !isMapped));
     }
 
     updateAllowedActions(true);
@@ -4559,7 +4559,7 @@ bool X11Window::userCanSetFullScreen() const
     return isNormalWindow() || isDialog();
 }
 
-void X11Window::setFullScreen(bool set, bool user)
+void X11Window::setFullScreen(bool set)
 {
     set = rules()->checkFullScreen(set);
 
@@ -4567,7 +4567,7 @@ void X11Window::setFullScreen(bool set, bool user)
     if (wasFullscreen == set) {
         return;
     }
-    if (user && !userCanSetFullScreen()) {
+    if (!userCanSetFullScreen()) {
         return;
     }
 

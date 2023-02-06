@@ -1018,7 +1018,7 @@ public:
     {
         return m_minimized;
     }
-    virtual void setFullScreen(bool set, bool user = true);
+    virtual void setFullScreen(bool set);
 
     QRectF geometryRestore() const;
     virtual MaximizeMode maximizeMode() const;

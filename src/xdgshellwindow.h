@@ -160,7 +160,7 @@ public:
     StrutRect strutRect(StrutArea area) const override;
     bool hasStrut() const override;
     void showOnScreenEdge() override;
-    void setFullScreen(bool set, bool user) override;
+    void setFullScreen(bool set) override;
     void closeWindow() override;
     void maximize(MaximizeMode mode) override;
 
