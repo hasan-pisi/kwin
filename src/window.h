@@ -1063,7 +1063,6 @@ public:
     virtual bool isMaximizable() const;
     virtual bool isMinimizable() const;
     virtual QRectF iconGeometry() const;
-    virtual bool userCanSetFullScreen() const;
     virtual bool userCanSetNoBorder() const;
     virtual void checkNoBorder();
 
