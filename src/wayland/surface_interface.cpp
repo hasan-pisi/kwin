@@ -73,7 +73,12 @@ void SurfaceInterfacePrivate::addChild(SubSurfaceInterface *child)
     cached.above.append(child);
     current.above.append(child);
     child->surface()->setOutputs(outputs);
-    child->surface()->setPreferredBufferScale(preferredBufferScale);
+    if (preferredBufferScaleSent) {
+        child->surface()->setPreferredBufferScale(preferredBufferScale);
+    }
+    if (preferredBufferTransformSent) {
+        child->surface()->setPreferredBufferTransform(preferredBufferTransform);
+    }
 
     Q_EMIT q->childSubSurfaceAdded(child);
     Q_EMIT q->childSubSurfacesChanged();
@@ -1111,19 +1116,44 @@ PresentationHint SurfaceInterface::presentationHint() const
 
 void SurfaceInterface::setPreferredBufferScale(qreal scale)
 {
-    if (scale == d->preferredBufferScale) {
+    if (scale == d->preferredBufferScale && d->preferredBufferScaleSent) {
         return;
     }
     d->preferredBufferScale = scale;
+    d->preferredBufferScaleSent = true;
 
     if (d->fractionalScaleExtension) {
         d->fractionalScaleExtension->setPreferredScale(scale);
     }
+    if (d->resource()->version() >= WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION) {
+        d->send_preferred_buffer_scale(std::ceil(scale));
+    }
+
     for (auto child : qAsConst(d->current.below)) {
         child->surface()->setPreferredBufferScale(scale);
     }
     for (auto child : qAsConst(d->current.above)) {
         child->surface()->setPreferredBufferScale(scale);
+    }
+}
+
+void SurfaceInterface::setPreferredBufferTransform(KWin::Output::Transform transform)
+{
+    if (transform == d->preferredBufferTransform && d->preferredBufferTransformSent) {
+        return;
+    }
+    d->preferredBufferTransform = transform;
+    d->preferredBufferTransformSent = true;
+
+    if (d->resource()->version() >= WL_SURFACE_PREFERRED_BUFFER_TRANSFORM_SINCE_VERSION) {
+        d->send_preferred_buffer_transform(uint32_t(transform));
+    }
+
+    for (auto child : qAsConst(d->current.below)) {
+        child->surface()->setPreferredBufferTransform(transform);
+    }
+    for (auto child : qAsConst(d->current.above)) {
+        child->surface()->setPreferredBufferTransform(transform);
     }
 }
 
