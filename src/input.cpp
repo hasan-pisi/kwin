@@ -29,6 +29,7 @@
 #include "pointer_input.h"
 #include "tablet_input.h"
 #include "touch_input.h"
+#include "wayland/xdgtopleveldrag_v1_interface.h"
 #include "x11window.h"
 #if KWIN_BUILD_TABBOX
 #include "tabbox/tabbox.h"
@@ -73,6 +74,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include "osd.h"
+#include "wayland/xdgshell_interface.h"
 #include <cmath>
 
 using namespace std::literals;
@@ -2382,6 +2384,15 @@ public:
         m_raiseTimer.setSingleShot(true);
         m_raiseTimer.setInterval(250);
         connect(&m_raiseTimer, &QTimer::timeout, this, &DragAndDropInputFilter::raiseDragTarget);
+
+        connect(waylandServer()->seat(), &KWaylandServer::SeatInterface::dragEnded, this, [this] {
+            if (!m_currentToplevelDragWindow) {
+                return;
+            }
+            m_currentToplevelDragWindow->setKeepAbove(m_wasKeepAbove);
+            workspace()->takeActivity(m_currentToplevelDragWindow, Workspace::ActivityFlag::ActivityFocus | Workspace::ActivityFlag::ActivityRaise);
+            m_currentToplevelDragWindow = nullptr;
+        });
     }
 
     bool pointerEvent(MouseEvent *event, quint32 nativeButton) override
@@ -2397,6 +2408,11 @@ public:
         switch (event->type()) {
         case QEvent::MouseMove: {
             const auto pos = input()->globalPointer();
+
+            if (seat->xdgTopleveldrag()) {
+                dragToplevel(pos, seat->xdgTopleveldrag());
+            }
+
             seat->notifyPointerMotion(pos);
             seat->notifyPointerFrame();
 
@@ -2487,6 +2503,11 @@ public:
         if (m_touchId != id) {
             return true;
         }
+
+        if (seat->xdgTopleveldrag()) {
+            dragToplevel(pos, seat->xdgTopleveldrag());
+        }
+
         seat->setTimestamp(time);
         seat->notifyTouchMotion(id, pos);
 
@@ -2561,6 +2582,9 @@ private:
         do {
             --it;
             Window *window = (*it);
+            if (auto toplevelDrag = waylandServer()->seat()->xdgTopleveldrag(); toplevelDrag && toplevelDrag->toplevel() && toplevelDrag->toplevel()->surface() == window->surface()) {
+                continue;
+            }
             if (window->isDeleted()) {
                 continue;
             }
@@ -2580,10 +2604,33 @@ private:
         return nullptr;
     }
 
+    void dragToplevel(const QPointF &pos, const KWaylandServer::XdgToplevelDragV1Interface *toplevelDrag)
+    {
+
+        auto window = toplevelDrag->toplevel() ? waylandServer()->findWindow(toplevelDrag->toplevel()->surface()) : nullptr;
+
+        if (m_currentToplevelDragWindow != window) {
+            if (m_currentToplevelDragWindow) {
+                m_currentToplevelDragWindow->setKeepAbove(m_wasKeepAbove);
+            }
+            m_currentToplevelDragWindow = window;
+            if (window) {
+                m_wasKeepAbove = window->keepAbove();
+                window->setKeepAbove(true);
+            }
+        }
+
+        if (window) {
+            window->move(pos - toplevelDrag->offset());
+        }
+    }
+
     qint32 m_touchId = -1;
     QPointF m_lastPos = QPointF(-1, -1);
     QPointer<Window> m_dragTarget;
     QTimer m_raiseTimer;
+    QPointer<Window> m_currentToplevelDragWindow = nullptr;
+    bool m_wasKeepAbove;
 };
 
 KWIN_SINGLETON_FACTORY(InputRedirection)

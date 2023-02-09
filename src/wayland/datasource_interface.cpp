@@ -7,6 +7,7 @@
 #include "datasource_interface.h"
 #include "clientconnection.h"
 #include "datadevicemanager_interface.h"
+#include "datasource_interface_p.h"
 #include "utils.h"
 // Qt
 #include <QStringList>
@@ -17,27 +18,6 @@
 
 namespace KWaylandServer
 {
-class DataSourceInterfacePrivate : public QtWaylandServer::wl_data_source
-{
-public:
-    DataSourceInterfacePrivate(DataSourceInterface *_q, ::wl_resource *resource);
-
-    DataSourceInterface *q;
-    QStringList mimeTypes;
-    DataDeviceManagerInterface::DnDActions supportedDnDActions = DataDeviceManagerInterface::DnDAction::None;
-    DataDeviceManagerInterface::DnDAction selectedDndAction = DataDeviceManagerInterface::DnDAction::None;
-    bool isAccepted = false;
-
-protected:
-    void data_source_destroy_resource(Resource *resource) override;
-    void data_source_offer(Resource *resource, const QString &mime_type) override;
-    void data_source_destroy(Resource *resource) override;
-    void data_source_set_actions(Resource *resource, uint32_t dnd_actions) override;
-
-private:
-    void offer(const QString &mimeType);
-};
-
 DataSourceInterfacePrivate::DataSourceInterfacePrivate(DataSourceInterface *_q, ::wl_resource *resource)
     : QtWaylandServer::wl_data_source(resource)
     , q(_q)
@@ -90,6 +70,11 @@ void DataSourceInterfacePrivate::data_source_set_actions(Resource *resource, uin
         supportedDnDActions = supportedActions;
         Q_EMIT q->supportedDragAndDropActionsChanged();
     }
+}
+
+DataSourceInterfacePrivate *DataSourceInterfacePrivate::get(DataSourceInterface *dataSource)
+{
+    return dataSource->d.get();
 }
 
 DataSourceInterface::DataSourceInterface(wl_resource *resource)
@@ -203,6 +188,11 @@ bool DataSourceInterface::isAccepted() const
 void DataSourceInterface::setAccepted(bool accepted)
 {
     d->isAccepted = accepted;
+}
+
+XdgToplevelDragV1Interface *DataSourceInterface::xdgToplevelDrag() const
+{
+    return d->xdgToplevelDrag;
 }
 
 }

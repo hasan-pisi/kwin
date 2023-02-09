@@ -14,6 +14,7 @@
 namespace KWaylandServer
 {
 class DataSourceInterfacePrivate;
+class XdgToplevelDragV1Interface;
 
 /**
  * @brief Represents the Resource for the wl_data_source interface.
@@ -49,8 +50,11 @@ public:
     bool isAccepted() const override;
     void setAccepted(bool accepted);
 
+    XdgToplevelDragV1Interface *xdgToplevelDrag() const;
+
 private:
     friend class DataDeviceManagerInterfacePrivate;
+    friend class DataSourceInterfacePrivate;
     explicit DataSourceInterface(wl_resource *resource);
 
     std::unique_ptr<DataSourceInterfacePrivate> d;
