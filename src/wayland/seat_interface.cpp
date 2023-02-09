@@ -14,6 +14,7 @@
 #include "datasource_interface.h"
 #include "display.h"
 #include "display_p.h"
+#include "extdrag_v1_interface.h"
 #include "keyboard_interface.h"
 #include "keyboard_interface_p.h"
 #include "pointer_interface.h"
@@ -258,11 +259,18 @@ void SeatInterfacePrivate::registerPrimarySelectionDevice(PrimarySelectionDevice
 
 void SeatInterfacePrivate::cancelDrag()
 {
+
     if (drag.target) {
         drag.target->updateDragTarget(nullptr, 0);
         drag.target = nullptr;
     }
-    endDrag();
+    QObject::disconnect(drag.dragSourceDestroyConnection);
+    if (drag.source) {
+        drag.source->dndCancelled();
+    }
+    drag = Drag();
+    Q_EMIT q->dragSurfaceChanged();
+    Q_EMIT q->dragEnded();
 }
 
 void SeatInterfacePrivate::endDrag()
@@ -271,12 +279,17 @@ void SeatInterfacePrivate::endDrag()
 
     AbstractDropHandler *dragTargetDevice = drag.target.data();
     AbstractDataSource *dragSource = drag.source;
+
     if (dragSource) {
         // TODO: Also check the current drag-and-drop action.
         if (dragTargetDevice && dragSource->isAccepted()) {
             Q_EMIT q->dragDropped();
             dragTargetDevice->drop();
             dragSource->dropPerformed();
+        } else if (auto ds = qobject_cast<DataSourceInterface *>(dragSource); ds && ds->extendedDragSource()
+                   && ds->extendedDragSource()->options() & ExtDragSourceV1Interface::Option::AllowDropNoTarget) {
+            dragSource->dropPerformed();
+            dragSource->dndFinished();
         } else {
             dragSource->dndCancelled();
         }

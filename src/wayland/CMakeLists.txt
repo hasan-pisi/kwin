@@ -206,6 +206,11 @@ ecm_add_qtwayland_server_protocol_kde(WaylandProtocols_xml
     BASENAME fractional-scale-v1
 )
 
+ecm_add_qtwayland_server_protocol_kde(WaylandProtocols_xml
+    PROTOCOL protocols/ext-drag-v1.xml
+    BASENAME ext-drag-v1
+)
+
 target_sources(kwin PRIVATE
     abstract_data_source.cpp
     abstract_drop_handler.cpp
@@ -229,6 +234,7 @@ target_sources(kwin PRIVATE
     dpms_interface.cpp
     drmclientbuffer.cpp
     drmlease_v1_interface.cpp
+    extdrag_v1_interface.cpp
     fakeinput_interface.cpp
     fractionalscale_v1_interface.cpp
     filtered_display.cpp

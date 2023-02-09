@@ -9,7 +9,6 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 #include "input.h"
-
 #include "backends/fakeinput/fakeinputbackend.h"
 #include "backends/libinput/connection.h"
 #include "backends/libinput/device.h"
@@ -29,6 +28,8 @@
 #include "pointer_input.h"
 #include "tablet_input.h"
 #include "touch_input.h"
+#include "wayland/datasource_interface.h"
+#include "wayland/extdrag_v1_interface.h"
 #include "x11window.h"
 #if KWIN_BUILD_TABBOX
 #include "tabbox/tabbox.h"
@@ -2395,6 +2396,21 @@ public:
         switch (event->type()) {
         case QEvent::MouseMove: {
             const auto pos = input()->globalPointer();
+
+            auto dataSource = qobject_cast<KWaylandServer::DataSourceInterface *>(seat->dragSource());
+            if (auto extendedDragSource = dataSource->extendedDragSource()) {
+                auto window = waylandServer()->findWindow(extendedDragSource->surface());
+                if (window) {
+                    window->move(pos - extendedDragSource->offset());
+                    if (!window->keepAbove()) {
+                        window->setKeepAbove(true);
+                        connect(seat, &KWaylandServer::SeatInterface::dragEnded, window, [window] {
+                            window->setKeepAbove(false);
+                        });
+                    }
+                }
+            }
+
             seat->notifyPointerMotion(pos);
             seat->notifyPointerFrame();
 
@@ -3200,6 +3216,12 @@ Window *InputRedirection::findManagedToplevel(const QPointF &pos)
         }
         if (isScreenLocked) {
             if (!window->isLockScreen() && !window->isInputMethod() && !window->isLockScreenOverlay()) {
+                continue;
+            }
+        }
+        if (waylandServer() && waylandServer()->seat()->isDrag()) {
+            auto dataSource = qobject_cast<KWaylandServer::DataSourceInterface *>(waylandServer()->seat()->dragSource());
+            if (dataSource && dataSource->extendedDragSource() && dataSource->extendedDragSource()->surface() == window->surface()) {
                 continue;
             }
         }

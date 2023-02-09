@@ -33,6 +33,7 @@
 #include "wayland/display.h"
 #include "wayland/dpms_interface.h"
 #include "wayland/drmlease_v1_interface.h"
+#include "wayland/extdrag_v1_interface.h"
 #include "wayland/filtered_display.h"
 #include "wayland/fractionalscale_v1_interface.h"
 #include "wayland/idle_interface.h"
@@ -516,6 +517,7 @@ bool WaylandServer::init(InitializationFlags flags)
 
     m_contentTypeManager = new KWaylandServer::ContentTypeManagerV1Interface(m_display, m_display);
     m_tearingControlInterface = new KWaylandServer::TearingControlManagerV1Interface(m_display, m_display);
+    auto extDrag = new ExtDragV1Interface(m_display, this);
 
     return true;
 }
