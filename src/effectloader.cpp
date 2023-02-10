@@ -12,7 +12,9 @@
 #include <config-kwin.h>
 // KWin
 #include "plugin.h"
+#include "scripting/sceneeffectitem.h"
 #include "scripting/scriptedeffect.h"
+#include "scripting/scripting.h"
 #include "utils/common.h"
 #include <kwineffects.h>
 // KDE
@@ -23,6 +25,8 @@
 #include <QDebug>
 #include <QFutureWatcher>
 #include <QPluginLoader>
+#include <QQmlComponent>
+#include <QQmlEngine>
 #include <QStaticPlugin>
 #include <QStringList>
 #include <QtConcurrentRun>
@@ -118,11 +122,28 @@ bool ScriptedEffectLoader::loadEffect(const KPluginMetaData &effect, LoadEffectF
         qCDebug(KWIN_CORE) << "Loading flags disable effect: " << name;
         return false;
     }
+
     if (m_loadedEffects.contains(name)) {
         qCDebug(KWIN_CORE) << name << "already loaded";
         return false;
     }
 
+    const QString api = effect.value(QStringLiteral("X-Plasma-API"));
+    if (api == QLatin1String("javascript")) {
+        return loadJavascriptEffect(effect);
+    } else if (api == QLatin1String("declarativescript")) {
+        return loadDeclarativeEffect(effect);
+    } else {
+        qCWarning(KWIN_CORE, "Failed to load %s effect: invalid X-Plasma-API field: %s. "
+                             "Available options are javascript, and declarativescript", qPrintable(name), qPrintable(api));
+    }
+
+    return false;
+}
+
+bool ScriptedEffectLoader::loadJavascriptEffect(const KPluginMetaData &effect)
+{
+    const QString name = effect.pluginId();
     if (!ScriptedEffect::supported()) {
         qCDebug(KWIN_CORE) << "Effect is not supported: " << name;
         return false;
@@ -134,6 +155,48 @@ bool ScriptedEffectLoader::loadEffect(const KPluginMetaData &effect, LoadEffectF
         return false;
     }
     connect(e, &ScriptedEffect::destroyed, this, [this, name]() {
+        m_loadedEffects.removeAll(name);
+    });
+
+    qCDebug(KWIN_CORE) << "Successfully loaded scripted effect: " << name;
+    Q_EMIT effectLoaded(e, name);
+    m_loadedEffects << name;
+    return true;
+}
+
+bool ScriptedEffectLoader::loadDeclarativeEffect(const KPluginMetaData &effect)
+{
+    const QString name = effect.pluginId();
+
+    const QString scriptName = effect.value(QStringLiteral("X-Plasma-MainScript"));
+    if (scriptName.isEmpty()) {
+        qCWarning(KWIN_CORE) << "X-Plasma-MainScript not set";
+        return false;
+    }
+    const QString scriptFile = QStandardPaths::locate(QStandardPaths::GenericDataLocation,
+                                                      QLatin1String("kwin/effects/") + name + QLatin1String("/contents/") + scriptName);
+    if (scriptFile.isNull()) {
+        qCWarning(KWIN_CORE) << "Could not locate the effect script";
+        return false;
+    }
+
+    QQmlEngine *engine = Scripting::self()->qmlEngine();
+    QQmlComponent component(engine);
+    component.loadUrl(QUrl::fromLocalFile(scriptFile));
+    if (component.isError()) {
+        qCWarning(KWIN_CORE).nospace() << "Failed to load " << scriptFile << ": " << component.errors();
+        return false;
+    }
+
+    auto e = qobject_cast<SceneEffectItem *>(component.beginCreate(engine->rootContext()));
+    if (!e) {
+        qCDebug(KWIN_CORE) << "Could not initialize scripted effect: " << name;
+        return false;
+    }
+    e->setMetaData(effect);
+    component.completeCreate();
+
+    connect(e, &Effect::destroyed, this, [this, name]() {
         m_loadedEffects.removeAll(name);
     });
 

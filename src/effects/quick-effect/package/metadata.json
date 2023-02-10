@@ -1,0 +1,22 @@
+{
+    "KPackageStructure": "KWin/Effect",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "vlad.zahorodnii@kde.org",
+                "Name": "Vlad Zahorodnii"
+            }
+        ],
+        "Category": "Appearance",
+        "Description": "Quick Effect",
+        "EnabledByDefault": true,
+        "Id": "kwin4_effect_quick-effect",
+        "License": "GPL",
+        "Name": "Quick Effect",
+        "Version": "1.0"
+    },
+    "X-KDE-Ordering": "60",
+    "X-KDE-PluginKeyword": "kwin4_effect_quick-effect",
+    "X-Plasma-API": "declarativescript",
+    "X-Plasma-MainScript": "ui/main.qml"
+}

@@ -64,6 +64,7 @@ install_scripted_effect(squash)
 install_scripted_effect(translucency)
 install_scripted_effect(windowaperture)
 install_scripted_effect(sessionquit)
+install_scripted_effect(quick-effect)
 
 ###############################################################################
 # Built-in effects go here

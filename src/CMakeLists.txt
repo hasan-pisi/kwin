@@ -144,6 +144,7 @@ target_sources(kwin PRIVATE
     scripting/dbuscall.cpp
     scripting/desktopbackgrounditem.cpp
     scripting/gesturehandler.cpp
+    scripting/sceneeffectitem.cpp
     scripting/screenedgehandler.cpp
     scripting/scriptedeffect.cpp
     scripting/scripting.cpp
@@ -196,6 +197,7 @@ target_link_libraries(kwin
     Qt::Quick
 
     KF6::ConfigCore
+    KF6::ConfigQml
     KF6::ConfigWidgets
     KF6::CoreAddons
     KF6::Crash

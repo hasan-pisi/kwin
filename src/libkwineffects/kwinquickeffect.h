@@ -9,7 +9,7 @@
 #include "kwineffects.h"
 #include "kwinoffscreenquickview.h"
 
-#include <QQmlEngine>
+#include <QQmlComponent>
 
 namespace KWin
 {
@@ -74,6 +74,7 @@ class KWINEFFECTS_EXPORT QuickSceneEffect : public Effect
 {
     Q_OBJECT
     Q_PROPERTY(QuickSceneView *activeView READ activeView NOTIFY activeViewChanged)
+    Q_PROPERTY(QQmlComponent *delegate READ delegate WRITE setDelegate)
 
 public:
     explicit QuickSceneEffect(QObject *parent = nullptr);
@@ -111,6 +112,9 @@ public:
      * Sets the given @a view as active. It will get a focusin event and all the other views will be set as inactive
      */
     Q_INVOKABLE void activateView(QuickSceneView *view);
+
+    QQmlComponent *delegate() const;
+    void setDelegate(QQmlComponent *delegate);
 
     /**
      * Returns the source URL.

@@ -62,7 +62,7 @@ public:
     }
     bool isItemOnScreen(QQuickItem *item, EffectScreen *screen) const;
 
-    std::unique_ptr<QQmlComponent> qmlComponent;
+    std::unique_ptr<QQmlComponent> delegate;
     QUrl source;
     std::map<EffectScreen *, std::unique_ptr<QQmlIncubator>> incubators;
     std::map<EffectScreen *, std::unique_ptr<QuickSceneView>> views;
@@ -244,8 +244,23 @@ void QuickSceneEffect::setSource(const QUrl &url)
     }
     if (d->source != url) {
         d->source = url;
-        d->qmlComponent.reset();
+        d->delegate.reset();
     }
+}
+
+QQmlComponent *QuickSceneEffect::delegate() const
+{
+    return d->delegate.get();
+}
+
+void QuickSceneEffect::setDelegate(QQmlComponent *delegate)
+{
+    if (isRunning()) {
+        qWarning() << "Cannot change QuickSceneEffect.source while running";
+        return;
+    }
+    d->source = QUrl();
+    d->delegate.reset(delegate);
 }
 
 QuickSceneView *QuickSceneEffect::viewForScreen(EffectScreen *screen) const
@@ -415,14 +430,14 @@ void QuickSceneEffect::addScreen(EffectScreen *screen)
             view->scheduleRepaint();
             d->views[screen] = std::move(view);
         } else if (incubator->isError()) {
-            qCWarning(LIBKWINEFFECTS) << "Could not create a view for QML file" << d->qmlComponent->url();
+            qCWarning(LIBKWINEFFECTS) << "Could not create a view for QML file" << d->delegate->url();
             qCWarning(LIBKWINEFFECTS) << incubator->errors();
         }
     });
 
     incubator->setInitialProperties(properties);
     d->incubators[screen].reset(incubator);
-    d->qmlComponent->create(*incubator);
+    d->delegate->create(*incubator);
 }
 
 void QuickSceneEffect::startInternal()
@@ -431,17 +446,17 @@ void QuickSceneEffect::startInternal()
         return;
     }
 
-    if (Q_UNLIKELY(d->source.isEmpty())) {
-        qWarning() << "QuickSceneEffect.source is empty. Did you forget to call setSource()?";
-        return;
-    }
+    if (!d->delegate) {
+        if (Q_UNLIKELY(d->source.isEmpty())) {
+            qWarning() << "QuickSceneEffect.source is empty. Did you forget to call setSource()?";
+            return;
+        }
 
-    if (!d->qmlComponent) {
-        d->qmlComponent.reset(new QQmlComponent(effects->qmlEngine()));
-        d->qmlComponent->loadUrl(d->source);
-        if (d->qmlComponent->isError()) {
-            qWarning().nospace() << "Failed to load " << d->source << ": " << d->qmlComponent->errors();
-            d->qmlComponent.reset();
+        d->delegate.reset(new QQmlComponent(effects->qmlEngine()));
+        d->delegate->loadUrl(d->source);
+        if (d->delegate->isError()) {
+            qWarning().nospace() << "Failed to load " << d->source << ": " << d->delegate->errors();
+            d->delegate.reset();
             return;
         }
     }
