@@ -200,10 +200,13 @@ ecm_add_qtwayland_server_protocol_kde(WaylandProtocols_xml
     PROTOCOL ${PLASMA_WAYLAND_PROTOCOLS_DIR}/kde-output-order-v1.xml
     BASENAME kde-output-order-v1
 )
-
 ecm_add_qtwayland_server_protocol_kde(WaylandProtocols_xml
     PROTOCOL ${WaylandProtocols_DATADIR}/staging/fractional-scale/fractional-scale-v1.xml
     BASENAME fractional-scale-v1
+)
+ecm_add_qtwayland_server_protocol_kde(WaylandProtocols_xml
+    PROTOCOL ${PROJECT_SOURCE_DIR}/src/wayland/protocols/kde-screen-edge-v1.xml
+    BASENAME kde-screen-edge-v1
 )
 
 target_sources(kwin PRIVATE
@@ -259,6 +262,7 @@ target_sources(kwin PRIVATE
     region_interface.cpp
     relativepointer_v1_interface.cpp
     screencast_v1_interface.cpp
+    screenedge_v1_interface.cpp
     seat_interface.cpp
     server_decoration_interface.cpp
     server_decoration_palette_interface.cpp

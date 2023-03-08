@@ -14,12 +14,14 @@
 #include "composite.h"
 #include "core/output.h"
 #include "core/outputbackend.h"
+#include "deleted.h"
 #include "idle_inhibition.h"
 #include "inputpanelv1integration.h"
 #include "keyboard_input.h"
 #include "layershellv1integration.h"
 #include "main.h"
 #include "scene/workspacescene.h"
+#include "screenedge.h"
 #include "unmanaged.h"
 #include "utils/serviceutils.h"
 #include "virtualdesktops.h"
@@ -54,6 +56,7 @@
 #include "wayland/pointergestures_v1_interface.h"
 #include "wayland/primaryselectiondevicemanager_v1_interface.h"
 #include "wayland/relativepointer_v1_interface.h"
+#include "wayland/screenedge_v1_interface.h"
 #include "wayland/seat_interface.h"
 #include "wayland/server_decoration_interface.h"
 #include "wayland/server_decoration_palette_interface.h"
@@ -516,6 +519,31 @@ bool WaylandServer::init(InitializationFlags flags)
 
     m_contentTypeManager = new KWaylandServer::ContentTypeManagerV1Interface(m_display, m_display);
     m_tearingControlInterface = new KWaylandServer::TearingControlManagerV1Interface(m_display, m_display);
+
+    auto screenEdgeManager = new KWaylandServer::ScreenEdgeManagerV1Interface(m_display, m_display);
+    connect(screenEdgeManager, &KWaylandServer::ScreenEdgeManagerV1Interface::edgeRequested, this, [this](KWaylandServer::ScreenEdgeV1Interface *edge) {
+        auto window = findWindow(edge->surface());
+        if (window) {
+            QAction *action = new QAction(edge);
+            workspace()->screenEdges()->reserve(edge->border(), action, "trigger");
+            connect(window, &Window::windowClosed, edge, [edge, action]() {
+                workspace()->screenEdges()->unreserve(edge->border(), action);
+            });
+
+            connect(action, &QAction::triggered, window, [edge, window]() {
+                window->showClient();
+                edge->sendShown();
+            });
+            connect(edge, &KWaylandServer::ScreenEdgeV1Interface::showRequested, window, [edge, window]() {
+                window->showClient();
+                edge->sendShown();
+            });
+            connect(edge, &KWaylandServer::ScreenEdgeV1Interface::hideRequested, window, [edge, window]() {
+                window->hideClient();
+                edge->sendHidden();
+            });
+        }
+    });
 
     return true;
 }

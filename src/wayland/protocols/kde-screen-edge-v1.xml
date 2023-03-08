@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="kde_screen_edge_v1">
+  <copyright><![CDATA[
+    SPDX-FileCopyrightText: 2023 Vlad Zahorodnii
+
+    SPDX-License-Identifier: MIT-CMU
+    ]]></copyright>
+
+  <interface name="kde_screen_edge_manager_v1" version="1">
+    <description summary="screen edge manager">
+    </description>
+
+    <request name="destroy" type="destructor">
+    </request>
+
+    <enum name="border">
+      <entry name="top" value="1"/>
+      <entry name="bottom" value="2"/>
+      <entry name="left" value="3"/>
+      <entry name="right" value="4"/>
+    </enum>
+
+    <request name="get_screen_edge">
+      <arg name="id" type="new_id" interface="kde_screen_edge_v1"
+           summary="the new screen edge"/>
+      <arg name="border" type="uint" enum="border"
+           summary="the associated screen border"/>
+      <arg name="surface" type="object" interface="wl_surface"
+           summary="the surface"/>
+    </request>
+  </interface>
+
+  <interface name="kde_screen_edge_v1" version="1">
+    <description summary="screen edge">
+    </description>
+
+    <request name="destroy" type="destructor">
+    </request>
+
+    <request name="show">
+    </request>
+
+    <request name="hide">
+    </request>
+
+    <event name="shown">
+    </event>
+
+    <event name="hidden">
+    </event>
+  </interface>
+</protocol>
