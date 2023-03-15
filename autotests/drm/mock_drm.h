@@ -15,6 +15,7 @@
 #include <QRect>
 #include <QVector>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 class MockGpu;
@@ -198,6 +199,7 @@ public:
     QVector<drmModePropertyBlobPtr> drmPropertyBlobs;
     QVector<drmModeObjectPropertiesPtr> drmObjectProperties;
     QVector<drmModePlaneResPtr> drmPlaneRes;
+    std::mutex m_mutex;
 };
 
 

@@ -16,6 +16,7 @@
 #include "drm_backend.h"
 #include "drm_buffer.h"
 #include "drm_buffer_gbm.h"
+#include "drm_commit_thread.h"
 #include "drm_connector.h"
 #include "drm_crtc.h"
 #include "drm_egl_backend.h"
@@ -28,6 +29,8 @@
 #include <drm_fourcc.h>
 #include <gbm.h>
 
+using namespace std::literals;
+
 namespace KWin
 {
 
@@ -36,6 +39,7 @@ static const QMap<uint32_t, QVector<uint64_t>> legacyCursorFormats = {{DRM_FORMA
 
 DrmPipeline::DrmPipeline(DrmConnector *conn)
     : m_connector(conn)
+    , m_commitThread(std::make_unique<DrmCommitThread>())
 {
 }
 
@@ -157,12 +161,23 @@ DrmPipeline::Error DrmPipeline::commitPipelinesAtomic(const QVector<DrmPipeline 
         return Error::None;
     }
     case CommitMode::Commit: {
-        if (!commit->commit()) {
-            qCCritical(KWIN_DRM) << "Atomic commit failed!" << strerror(errno);
+        Q_ASSERT(pipelines.size() == 1);
+        Q_ASSERT(unusedObjects.isEmpty());
+        const auto pipeline = pipelines.front();
+        pipeline->m_commitThread->setCommit(std::move(commit), pipeline->m_output->renderLoop()->nextPresentationTimestamp() - 1ms);
+        pipeline->atomicCommitSuccessful();
+        return Error::None;
+    }
+    case CommitMode::CommitUpdateOnly: {
+        Q_ASSERT(pipelines.size() == 1);
+        Q_ASSERT(unusedObjects.isEmpty());
+        if (!commit->test()) {
             return errnoToError();
         }
-        std::for_each(pipelines.begin(), pipelines.end(), std::mem_fn(&DrmPipeline::atomicCommitSuccessful));
-        Q_ASSERT(unusedObjects.isEmpty());
+        const auto pipeline = pipelines.front();
+        if (pipeline->m_commitThread->replaceCommit(std::move(commit))) {
+            pipeline->atomicCommitSuccessful();
+        }
         return Error::None;
     }
     default:
@@ -353,15 +368,15 @@ bool DrmPipeline::setCursor(const QPoint &hotspot)
     m_pending.cursorHotspot = hotspot;
     // explicitly check for the cursor plane and not for AMS, as we might not always have one
     if (m_pending.crtc->cursorPlane()) {
-        result = commitPipelines({this}, CommitMode::Test) == Error::None;
-        if (result && m_output) {
-            m_output->renderLoop()->scheduleRepaint();
-        }
+        result = commitPipelines({this}, CommitMode::CommitUpdateOnly) == Error::None;
     } else {
         result = setCursorLegacy();
     }
     if (result) {
         m_next = m_pending;
+        if (result) {
+            m_output->renderLoop()->scheduleRepaint();
+        }
     } else {
         m_pending = m_next;
     }
@@ -373,7 +388,7 @@ bool DrmPipeline::moveCursor()
     bool result;
     // explicitly check for the cursor plane and not for AMS, as we might not always have one
     if (m_pending.crtc->cursorPlane()) {
-        result = commitPipelines({this}, CommitMode::Test) == Error::None;
+        result = commitPipelines({this}, CommitMode::CommitUpdateOnly) == Error::None;
     } else {
         result = moveCursorLegacy();
     }
@@ -429,7 +444,13 @@ void DrmPipeline::pageFlipped(std::chrono::nanoseconds timestamp)
 
 void DrmPipeline::setOutput(DrmOutput *output)
 {
+    if (m_output) {
+        QObject::disconnect(m_commitThread.get(), nullptr, m_output, nullptr);
+    }
     m_output = output;
+    if (output) {
+        QObject::connect(m_commitThread.get(), &DrmCommitThread::commitFailed, output, &DrmAbstractOutput::frameFailed);
+    }
 }
 
 DrmOutput *DrmPipeline::output() const

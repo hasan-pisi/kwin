@@ -282,12 +282,14 @@ MockDumbBuffer::MockDumbBuffer(MockGpu *gpu, uint32_t width, uint32_t height, ui
 
 // drm functions
 
-#define GPU(fd, error) auto gpu = getGpu(fd);\
-if (!gpu) {\
-    qWarning("invalid fd %d", fd);\
-    errno = EINVAL;\
-    return error;\
-}
+#define GPU(fd, error)                 \
+    auto gpu = getGpu(fd);             \
+    if (!gpu) {                        \
+        qWarning("invalid fd %d", fd); \
+        errno = EINVAL;                \
+        return error;                  \
+    }                                  \
+    std::scoped_lock lock(gpu->m_mutex);
 
 drmVersionPtr drmGetVersion(int fd)
 {
