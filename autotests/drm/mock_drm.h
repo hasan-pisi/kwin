@@ -13,7 +13,6 @@
 
 #include <QMap>
 #include <QRect>
-#include <QVector>
 #include <memory>
 #include <vector>
 
@@ -27,7 +26,7 @@ class MockPlane;
 
 class MockProperty {
 public:
-    MockProperty(MockObject *obj, QString name, uint64_t initialValue, uint32_t flags, QVector<QByteArray> enums = {});
+    MockProperty(MockObject *obj, QString name, uint64_t initialValue, uint32_t flags, std::vector<QByteArray> enums = {});
     ~MockProperty() = default;
 
     MockObject *obj;
@@ -35,7 +34,7 @@ public:
     uint32_t flags;
     QString name;
     uint64_t value;
-    QVector<QByteArray> enums;
+    std::vector<QByteArray> enums;
 };
 
 class MockPropertyBlob {
@@ -60,7 +59,7 @@ public:
     uint32_t getPropId(const QString &propName) const;
 
     uint32_t id;
-    QVector<MockProperty> props;
+    std::vector<MockProperty> props;
     MockGpu *gpu;
 };
 
@@ -75,7 +74,7 @@ public:
     drmModeConnection connection;
     uint32_t type;
     std::shared_ptr<MockEncoder> encoder;
-    QVector<drmModeModeInfo> modes;
+    std::vector<drmModeModeInfo> modes;
 };
 
 class MockEncoder : public MockObject {
@@ -175,29 +174,29 @@ public:
     QMap<uint32_t, uint64_t> deviceCaps;
 
     uint32_t idCounter = 1;
-    QVector<MockObject*> objects;
+    std::vector<MockObject *> objects;
 
-    QVector<std::shared_ptr<MockConnector>> connectors;
-    QVector<drmModeConnectorPtr> drmConnectors;
+    std::vector<std::shared_ptr<MockConnector>> connectors;
+    std::vector<drmModeConnectorPtr> drmConnectors;
 
-    QVector<std::shared_ptr<MockEncoder>> encoders;
-    QVector<drmModeEncoderPtr> drmEncoders;
+    std::vector<std::shared_ptr<MockEncoder>> encoders;
+    std::vector<drmModeEncoderPtr> drmEncoders;
 
-    QVector<std::shared_ptr<MockCrtc>> crtcs;
-    QVector<drmModeCrtcPtr> drmCrtcs;
+    std::vector<std::shared_ptr<MockCrtc>> crtcs;
+    std::vector<drmModeCrtcPtr> drmCrtcs;
 
-    QVector<std::shared_ptr<MockPlane>> planes;
-    QVector<drmModePlanePtr> drmPlanes;
+    std::vector<std::shared_ptr<MockPlane>> planes;
+    std::vector<drmModePlanePtr> drmPlanes;
 
-    QVector<MockFb*> fbs;
-    QVector<std::shared_ptr<MockDumbBuffer>> dumbBuffers;
+    std::vector<MockFb *> fbs;
+    std::vector<std::shared_ptr<MockDumbBuffer>> dumbBuffers;
     std::vector<std::unique_ptr<MockPropertyBlob>> propertyBlobs;
 
-    QVector<drmModeResPtr> resPtrs;
-    QVector<drmModePropertyPtr> drmProps;
-    QVector<drmModePropertyBlobPtr> drmPropertyBlobs;
-    QVector<drmModeObjectPropertiesPtr> drmObjectProperties;
-    QVector<drmModePlaneResPtr> drmPlaneRes;
+    std::vector<drmModeResPtr> resPtrs;
+    std::vector<drmModePropertyPtr> drmProps;
+    std::vector<drmModePropertyBlobPtr> drmPropertyBlobs;
+    std::vector<drmModeObjectPropertiesPtr> drmObjectProperties;
+    std::vector<drmModePlaneResPtr> drmPlaneRes;
 };
 
 

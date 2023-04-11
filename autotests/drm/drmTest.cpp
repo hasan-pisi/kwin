@@ -42,15 +42,15 @@ private Q_SLOTS:
 
 static void verifyCleanup(MockGpu *mockGpu)
 {
-    QVERIFY(mockGpu->drmConnectors.isEmpty());
-    QVERIFY(mockGpu->drmEncoders.isEmpty());
-    QVERIFY(mockGpu->drmCrtcs.isEmpty());
-    QVERIFY(mockGpu->drmPlanes.isEmpty());
-    QVERIFY(mockGpu->drmPlaneRes.isEmpty());
-    QVERIFY(mockGpu->fbs.isEmpty());
-    QVERIFY(mockGpu->drmProps.isEmpty());
-    QVERIFY(mockGpu->drmObjectProperties.isEmpty());
-    QVERIFY(mockGpu->drmPropertyBlobs.isEmpty());
+    QVERIFY(mockGpu->drmConnectors.empty());
+    QVERIFY(mockGpu->drmEncoders.empty());
+    QVERIFY(mockGpu->drmCrtcs.empty());
+    QVERIFY(mockGpu->drmPlanes.empty());
+    QVERIFY(mockGpu->drmPlaneRes.empty());
+    QVERIFY(mockGpu->fbs.empty());
+    QVERIFY(mockGpu->drmProps.empty());
+    QVERIFY(mockGpu->drmObjectProperties.empty());
+    QVERIFY(mockGpu->drmPropertyBlobs.empty());
 }
 
 void DrmTest::testAmsDetection()
@@ -65,7 +65,7 @@ void DrmTest::testAmsDetection()
     QVERIFY(!gpu->atomicModeSetting());
 
     // gpu with planes should use AMS
-    mockGpu->planes << std::make_shared<MockPlane>(mockGpu.get(), PlaneType::Primary, 0);
+    mockGpu->planes.push_back(std::make_shared<MockPlane>(mockGpu.get(), PlaneType::Primary, 0));
     gpu = std::make_unique<DrmGpu>(backend.get(), "AMS", 1, 0);
     QVERIFY(gpu->atomicModeSetting());
 
@@ -105,7 +105,7 @@ void DrmTest::testOutputDetection()
     QVERIFY(static_cast<DrmOutput *>(*vrOutput)->connector()->id() == vr->id);
 
     // test hotunplugging
-    mockGpu->connectors.removeOne(one);
+    std::erase(mockGpu->connectors, one);
     QVERIFY(gpu->updateOutputs());
     QCOMPARE(gpu->drmOutputs().size(), 2);
 
