@@ -152,7 +152,7 @@ struct Prop {
 
 struct _drmModeAtomicReq {
     bool legacyEmulation = false;
-    QVector<Prop> props;
+    std::vector<Prop> props;
 };
 
 #define MOCKDRM_DEVICE_CAP_ATOMIC 0xFF

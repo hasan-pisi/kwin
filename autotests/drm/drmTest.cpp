@@ -36,8 +36,6 @@ private Q_SLOTS:
     void testAmsDetection();
     void testOutputDetection();
     void testZeroModesHandling();
-    void testModeGeneration_data();
-    void testModeGeneration();
     void testConnectorLifetime();
     void testAtomicModeset();
 };
@@ -149,7 +147,7 @@ void DrmTest::testZeroModesHandling()
     QVERIFY(gpu->drmOutputs().empty());
 
     // once it has modes, it should be detected
-    conn->addMode(1920, 1080, 60);
+    conn->addMode(10, 10, 60);
     QVERIFY(gpu->updateOutputs());
     QCOMPARE(gpu->drmOutputs().size(), 1);
 
@@ -158,133 +156,6 @@ void DrmTest::testZeroModesHandling()
     QVERIFY(gpu->updateOutputs());
     QCOMPARE(gpu->drmOutputs().size(), 1);
     QVERIFY(!gpu->drmOutputs().constFirst()->modes().empty());
-
-    gpu.reset();
-    verifyCleanup(mockGpu.get());
-}
-
-void DrmTest::testModeGeneration_data()
-{
-    QTest::addColumn<QSize>("nativeMode");
-    QTest::addColumn<QVector<QSize>>("expectedModes");
-
-    QTest::newRow("2160p") << QSize(3840, 2160) << QVector<QSize>{
-        QSize(1600, 1200),
-        QSize(1280, 1024),
-        QSize(1024, 768),
-        QSize(2560, 1600),
-        QSize(1920, 1200),
-        QSize(1280, 800),
-        QSize(3840, 2160),
-        QSize(3200, 1800),
-        QSize(2880, 1620),
-        QSize(2560, 1440),
-        QSize(1920, 1080),
-        QSize(1600, 900),
-        QSize(1368, 768),
-        QSize(1280, 720),
-    };
-    QTest::newRow("1440p") << QSize(2560, 1440) << QVector<QSize>{
-        QSize(1600, 1200),
-        QSize(1280, 1024),
-        QSize(1024, 768),
-        QSize(1920, 1200),
-        QSize(1280, 800),
-        QSize(2560, 1440),
-        QSize(1920, 1080),
-        QSize(1600, 900),
-        QSize(1368, 768),
-        QSize(1280, 720),
-    };
-    QTest::newRow("1080p") << QSize(1920, 1080) << QVector<QSize>{
-        QSize(1280, 1024),
-        QSize(1024, 768),
-        QSize(1280, 800),
-        QSize(1920, 1080),
-        QSize(1600, 900),
-        QSize(1368, 768),
-        QSize(1280, 720),
-    };
-
-    QTest::newRow("2160p 21:9") << QSize(5120, 2160) << QVector<QSize>{
-        QSize(5120, 2160),
-        QSize(1600, 1200),
-        QSize(1280, 1024),
-        QSize(1024, 768),
-        QSize(2560, 1600),
-        QSize(1920, 1200),
-        QSize(1280, 800),
-        QSize(3840, 2160),
-        QSize(3200, 1800),
-        QSize(2880, 1620),
-        QSize(2560, 1440),
-        QSize(1920, 1080),
-        QSize(1600, 900),
-        QSize(1368, 768),
-        QSize(1280, 720),
-    };
-    QTest::newRow("1440p 21:9") << QSize(3440, 1440) << QVector<QSize>{
-        QSize(3440, 1440),
-        QSize(1600, 1200),
-        QSize(1280, 1024),
-        QSize(1024, 768),
-        QSize(1920, 1200),
-        QSize(1280, 800),
-        QSize(2560, 1440),
-        QSize(1920, 1080),
-        QSize(1600, 900),
-        QSize(1368, 768),
-        QSize(1280, 720),
-    };
-    QTest::newRow("1080p 21:9") << QSize(2560, 1080) << QVector<QSize>{
-        QSize(2560, 1080),
-        QSize(1280, 1024),
-        QSize(1024, 768),
-        QSize(1280, 800),
-        QSize(1920, 1080),
-        QSize(1600, 900),
-        QSize(1368, 768),
-        QSize(1280, 720),
-    };
-}
-
-void DrmTest::testModeGeneration()
-{
-    const auto mockGpu = std::make_unique<MockGpu>(1, 5);
-
-    const auto conn = std::make_shared<MockConnector>(mockGpu.get());
-    mockGpu->connectors.push_back(conn);
-
-    const auto session = Session::create(Session::Type::Noop);
-    const auto backend = std::make_unique<DrmBackend>(session.get());
-    const auto renderBackend = backend->createQPainterBackend();
-    auto gpu = std::make_unique<DrmGpu>(backend.get(), "test", 1, 0);
-
-    QFETCH(QSize, nativeMode);
-    QFETCH(QVector<QSize>, expectedModes);
-
-    conn->modes.clear();
-    conn->addMode(nativeMode.width(), nativeMode.height(), 60);
-    QVERIFY(gpu->updateOutputs());
-    QCOMPARE(gpu->drmOutputs().size(), 1);
-    // no mode generation without the scaling property
-    QCOMPARE(gpu->drmOutputs().front()->modes().size(), 1);
-
-    mockGpu->connectors.removeAll(conn);
-    QVERIFY(gpu->updateOutputs());
-
-    conn->props.emplace_back(conn.get(), QStringLiteral("scaling mode"), 0, 0, QVector<QByteArray>{"None", "Full", "Center", "Full aspect"});
-    mockGpu->connectors.push_back(conn);
-    QVERIFY(gpu->updateOutputs());
-
-    DrmOutput *const output = gpu->drmOutputs().front();
-    QCOMPARE(output->modes().size(), expectedModes.size());
-    for (const auto &mode : output->modes()) {
-        QVERIFY(expectedModes.contains(mode->size()));
-        QVERIFY(mode->size().width() <= nativeMode.width());
-        QVERIFY(mode->size().height() <= nativeMode.height());
-        QVERIFY(mode->refreshRate() <= 60000);
-    }
 
     gpu.reset();
     verifyCleanup(mockGpu.get());

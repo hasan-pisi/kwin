@@ -177,7 +177,7 @@ MockConnector::MockConnector(MockGpu *gpu, bool nonDesktop)
     addProp("DPMS", DRM_MODE_DPMS_OFF, 0);
     addProp("EDID", 0, DRM_MODE_PROP_BLOB | DRM_MODE_PROP_IMMUTABLE);
 
-    addMode(1920, 1080, 60.0);
+    addMode(10, 10, 60.0);
 }
 
 void MockConnector::addMode(uint32_t width, uint32_t height, float refreshRate, bool preferred)
@@ -940,8 +940,8 @@ int drmModeAtomicAddProperty(drmModeAtomicReqPtr req, uint32_t object_id, uint32
     p.obj = object_id;
     p.prop = property_id;
     p.value = value;
-    req->props << p;
-    return req->props.count();
+    req->props.push_back(p);
+    return req->props.size();
 }
 
 static bool checkIfEqual(const drmModeModeInfo &one, const drmModeModeInfo &two)
@@ -1005,7 +1005,7 @@ int drmModeAtomicCommit(int fd, drmModeAtomicReqPtr req, uint32_t flags, void *u
     }
 
     // apply changes to the copies
-    for (int i = 0; i < req->props.count(); i++) {
+    for (uint i = 0; i < req->props.size(); i++) {
         auto p = req->props[i];
         auto it = std::find_if(objects.constBegin(), objects.constEnd(), [p](const auto &obj){return obj->id == p.obj;});
         if (it == objects.constEnd()) {
