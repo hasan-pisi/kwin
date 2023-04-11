@@ -39,6 +39,7 @@ private Q_SLOTS:
     void testModeGeneration_data();
     void testModeGeneration();
     void testConnectorLifetime();
+    void testAtomicModeset();
 };
 
 static void verifyCleanup(MockGpu *mockGpu)
@@ -311,6 +312,30 @@ void DrmTest::testConnectorLifetime()
     mockGpu->connectors.clear();
     QVERIFY(gpu->updateOutputs());
     output->unref();
+
+    gpu.reset();
+    verifyCleanup(mockGpu.get());
+}
+
+void DrmTest::testAtomicModeset()
+{
+    // test if doing an atomic modeset would succeed
+    const auto mockGpu = std::make_unique<MockGpu>(1, 5);
+
+    const auto conn = std::make_shared<MockConnector>(mockGpu.get());
+    mockGpu->connectors.push_back(conn);
+
+    const auto session = Session::create(Session::Type::Noop);
+    const auto backend = std::make_unique<DrmBackend>(session.get());
+    const auto renderBackend = backend->createQPainterBackend();
+    auto gpu = std::make_unique<DrmGpu>(backend.get(), "testModeset", 1, 0);
+
+    QVERIFY(gpu->updateOutputs());
+    QCOMPARE(gpu->drmOutputs().size(), 1);
+    const auto output = gpu->drmOutputs().front();
+    output->renderLoop()->beginFrame();
+    output->renderLoop()->endFrame();
+    QVERIFY(gpu->drmOutputs().front()->present());
 
     gpu.reset();
     verifyCleanup(mockGpu.get());
