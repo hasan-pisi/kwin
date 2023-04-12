@@ -139,7 +139,7 @@ public:
 
     uint32_t handle;
     uint32_t pitch;
-    std::vector<std::byte> data;
+    std::vector<uint8_t> data;
     MockGpu *gpu;
 };
 
