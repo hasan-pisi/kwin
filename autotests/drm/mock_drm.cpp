@@ -341,7 +341,7 @@ int drmHandleEvent(int fd, drmEventContextPtr evctx)
     return -(errno = ENOTSUP);
 }
 
-int drmIoctl(int fd, unsigned long request, void *arg)
+int doDrmIoctl(int fd, unsigned long request, void *arg)
 {
     GPU(fd, -EINVAL);
     if (request == DRM_IOCTL_MODE_CREATE_DUMB) {

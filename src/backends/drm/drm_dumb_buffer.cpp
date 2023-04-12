@@ -10,6 +10,7 @@
 
 #include "drm_gpu.h"
 #include "drm_logging.h"
+#include "test.h"
 
 #include <cerrno>
 #include <drm_fourcc.h>
@@ -33,7 +34,7 @@ DrmDumbBuffer::~DrmDumbBuffer()
     }
     drm_mode_destroy_dumb destroyArgs;
     destroyArgs.handle = m_handles[0];
-    drmIoctl(m_gpu->fd(), DRM_IOCTL_MODE_DESTROY_DUMB, &destroyArgs);
+    doDrmIoctl(m_gpu->fd(), DRM_IOCTL_MODE_DESTROY_DUMB, &destroyArgs);
 }
 
 bool DrmDumbBuffer::map(QImage::Format format)
@@ -41,7 +42,7 @@ bool DrmDumbBuffer::map(QImage::Format format)
     drm_mode_map_dumb mapArgs;
     memset(&mapArgs, 0, sizeof mapArgs);
     mapArgs.handle = m_handles[0];
-    if (drmIoctl(m_gpu->fd(), DRM_IOCTL_MODE_MAP_DUMB, &mapArgs) != 0) {
+    if (doDrmIoctl(m_gpu->fd(), DRM_IOCTL_MODE_MAP_DUMB, &mapArgs) != 0) {
         return false;
     }
 #ifdef KWIN_UNIT_TEST
@@ -74,7 +75,7 @@ std::shared_ptr<DrmDumbBuffer> DrmDumbBuffer::createDumbBuffer(DrmGpu *gpu, cons
     createArgs.bpp = 32;
     createArgs.width = size.width();
     createArgs.height = size.height();
-    if (drmIoctl(gpu->fd(), DRM_IOCTL_MODE_CREATE_DUMB, &createArgs) != 0) {
+    if (doDrmIoctl(gpu->fd(), DRM_IOCTL_MODE_CREATE_DUMB, &createArgs) != 0) {
         qCWarning(KWIN_DRM) << "DRM_IOCTL_MODE_CREATE_DUMB failed" << strerror(errno);
         return nullptr;
     }

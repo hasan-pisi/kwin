@@ -14,6 +14,7 @@
 #include "drm_layer.h"
 #include "drm_logging.h"
 #include "drm_pipeline.h"
+#include "test.h"
 
 #include <errno.h>
 #include <gbm.h>
@@ -154,7 +155,7 @@ bool DrmPipeline::setCursorLegacy()
         .hot_x = m_pending.cursorHotspot.x(),
         .hot_y = m_pending.cursorHotspot.y(),
     };
-    return drmIoctl(gpu()->fd(), DRM_IOCTL_MODE_CURSOR2, &arg) == 0;
+    return doDrmIoctl(gpu()->fd(), DRM_IOCTL_MODE_CURSOR2, &arg) == 0;
 }
 
 bool DrmPipeline::moveCursorLegacy()
