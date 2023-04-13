@@ -55,6 +55,12 @@ private:
     void createRenderNode(Item *item, RenderContext *context);
 
     bool m_blendingEnabled = false;
+
+    struct
+    {
+        bool pixelSnapEnabled = false;
+        std::unique_ptr<GLShader> pixelSnapShader;
+    } m_debug;
 };
 
 } // namespace KWin

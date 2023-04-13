@@ -19,6 +19,11 @@ namespace KWin
 
 ItemRendererOpenGL::ItemRendererOpenGL()
 {
+    const QString visualizeOptionsString = qEnvironmentVariable("KWIN_SCENE_VISUALIZE");
+    if (!visualizeOptionsString.isEmpty()) {
+        const QStringList visualtizeOptions = visualizeOptionsString.split(';');
+        m_debug.pixelSnapEnabled = visualtizeOptions.contains(QLatin1StringView("fractional"));
+    }
 }
 
 ImageItem *ItemRendererOpenGL::createImageItem(Scene *scene, Item *parent)
@@ -356,11 +361,54 @@ void ItemRendererOpenGL::renderItem(const RenderTarget &renderTarget, const Rend
                   renderNode.vertexCount, renderContext.hardwareClipping);
     }
 
+    ShaderManager::instance()->popShader();
+
+    if (m_debug.pixelSnapEnabled) {
+        if (!m_debug.pixelSnapShader) {
+            m_debug.pixelSnapShader = ShaderManager::instance()->generateShaderFromFile(
+                ShaderTrait::MapTexture,
+                QStringLiteral(":/scene/shaders/debug_fractional.vert"),
+                QStringLiteral(":/scene/shaders/debug_fractional.frag"));
+        }
+
+        ShaderBinder debugShaderBinder(m_debug.pixelSnapShader.get());
+        m_debug.pixelSnapShader->setUniform("fractionalPrecision", 0.01f);
+
+        auto screenSize = viewport.renderRect().size() * viewport.scale();
+        m_debug.pixelSnapShader->setUniform("screenSize", QVector2D{float(screenSize.width()), float(screenSize.height())});
+
+        auto fg = QVector2D{
+            float(item->rect().width() * viewport.scale()),
+            float(item->rect().height() * viewport.scale())};
+        m_debug.pixelSnapShader->setUniform("geometrySize", fg);
+
+        for (int i = 0; i < renderContext.renderNodes.count(); i++) {
+            const RenderNode &renderNode = renderContext.renderNodes[i];
+            if (renderNode.vertexCount == 0) {
+                continue;
+            }
+
+            setBlendEnabled(true);
+
+            shader->setUniform(GLShader::ModelViewProjectionMatrix, projectionMatrix * renderNode.transformMatrix);
+            if (opacity != renderNode.opacity) {
+                shader->setUniform(GLShader::ModulationConstant,
+                                   modulate(renderNode.opacity, data.brightness()));
+                opacity = renderNode.opacity;
+            }
+
+            renderNode.texture->setFilter(GL_LINEAR);
+            renderNode.texture->setWrapMode(GL_CLAMP_TO_EDGE);
+            renderNode.texture->bind();
+
+            vbo->draw(scissorRegion, GL_TRIANGLES, renderNode.firstVertex,
+                      renderNode.vertexCount, renderContext.hardwareClipping);
+        }
+    }
+
     vbo->unbindArrays();
 
     setBlendEnabled(false);
-
-    ShaderManager::instance()->popShader();
 
     if (renderContext.hardwareClipping) {
         glDisable(GL_SCISSOR_TEST);
