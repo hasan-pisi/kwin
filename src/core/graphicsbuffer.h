@@ -47,6 +47,8 @@ public:
     virtual bool hasAlphaChannel() const = 0;
     virtual Origin origin() const = 0;
 
+    static bool alphaChannelFromDrmFormat(uint32_t format);
+
 Q_SIGNALS:
     void released();
     void dropped();
