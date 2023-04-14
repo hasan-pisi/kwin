@@ -394,6 +394,8 @@ if (KWIN_BUILD_SCREENLOCKER)
     )
 endif()
 
+find_package(KGlobalAccelD REQUIRED)
+
 ########### global ###############
 
 include_directories(BEFORE
