@@ -12,19 +12,74 @@
 #include "virtual_output.h"
 #include "virtual_qpainter_backend.h"
 
+#include <fcntl.h>
+#include <gbm.h>
+#include <xf86drm.h>
+
 namespace KWin
 {
+
+static FileDescriptor findRenderNode()
+{
+    const int deviceCount = drmGetDevices2(0, nullptr, 0);
+    if (deviceCount <= 0) {
+        return FileDescriptor{};
+    }
+
+    QVector<drmDevice *> devices(deviceCount);
+    if (drmGetDevices2(0, devices.data(), devices.size()) < 0) {
+        return FileDescriptor{};
+    }
+    auto deviceCleanup = qScopeGuard([&devices]() {
+        drmFreeDevices(devices.data(), devices.size());
+    });
+
+    for (drmDevice *device : std::as_const(devices)) {
+        if (device->available_nodes & (1 << DRM_NODE_RENDER)) {
+            FileDescriptor fd{open(device->nodes[DRM_NODE_RENDER], O_RDWR | O_CLOEXEC)};
+            if (fd.isValid()) {
+                return fd;
+            }
+        }
+    }
+
+    return FileDescriptor{};
+}
 
 VirtualBackend::VirtualBackend(QObject *parent)
     : OutputBackend(parent)
 {
+    m_drmFileDescriptor = findRenderNode();
+    if (m_drmFileDescriptor.isValid()) {
+        m_gbmDevice = gbm_create_device(m_drmFileDescriptor.get());
+    }
 }
 
-VirtualBackend::~VirtualBackend() = default;
+VirtualBackend::~VirtualBackend()
+{
+    if (m_gbmDevice) {
+        gbm_device_destroy(m_gbmDevice);
+    }
+}
 
 bool VirtualBackend::initialize()
 {
     return true;
+}
+
+QVector<CompositingType> VirtualBackend::supportedCompositors() const
+{
+    QVector<CompositingType> compositingTypes;
+    if (m_gbmDevice) {
+        compositingTypes.append(OpenGLCompositing);
+    }
+    compositingTypes.append(QPainterCompositing);
+    return compositingTypes;
+}
+
+gbm_device *VirtualBackend::gbmDevice() const
+{
+    return m_gbmDevice;
 }
 
 std::unique_ptr<QPainterBackend> VirtualBackend::createQPainterBackend()
