@@ -19,6 +19,7 @@
 #include "workspace.h"
 #include <KApplicationTrader>
 #include <KDesktopFile>
+#include <memory>
 
 using namespace KWaylandServer;
 
@@ -104,7 +105,11 @@ QString XdgActivationV1Integration::requestToken(bool isPrivileged, SurfaceInter
         }
         icon = QIcon::fromTheme(df.readIcon(), icon);
     }
-    m_currentActivationToken.reset(new ActivationToken{newToken, isPrivileged, surface, serial, seat, appId, showNotify, waylandServer()->plasmaActivationFeedback()->createActivation(appId)});
+    std::unique_ptr<KWaylandServer::PlasmaWindowActivationInterface> plasmaActivation(nullptr);
+    if (showNotify) {
+        plasmaActivation = waylandServer()->plasmaActivationFeedback()->createActivation(appId);
+    }
+    m_currentActivationToken.reset(new ActivationToken{newToken, isPrivileged, surface, serial, seat, appId, showNotify, std::move(plasmaActivation)});
     if (showNotify) {
         Q_EMIT effects->startupAdded(m_currentActivationToken->token, icon);
     }
