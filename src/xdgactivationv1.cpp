@@ -105,7 +105,7 @@ QString XdgActivationV1Integration::requestToken(bool isPrivileged, SurfaceInter
         }
         icon = QIcon::fromTheme(df.readIcon(), icon);
     }
-    std::unique_ptr<KWaylandServer::PlasmaWindowActivationInterface> plasmaActivation(nullptr);
+    std::unique_ptr<KWaylandServer::PlasmaWindowActivationInterface> activation;
     if (showNotify) {
         plasmaActivation = waylandServer()->plasmaActivationFeedback()->createActivation(appId);
     }
