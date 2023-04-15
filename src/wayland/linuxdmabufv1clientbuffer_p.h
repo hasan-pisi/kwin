@@ -10,9 +10,8 @@
     SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
 */
 #pragma once
-#include "clientbuffer_p.h"
+
 #include "display.h"
-#include "display_p.h"
 #include "linuxdmabufv1clientbuffer.h"
 #include "utils/ramfile.h"
 
@@ -20,6 +19,7 @@
 #include "qwayland-server-wayland.h"
 
 #include <QDebug>
+#include <QPointer>
 #include <QVector>
 
 #include <drm_fourcc.h>
@@ -49,14 +49,18 @@ protected:
     void zwp_linux_dmabuf_v1_get_surface_feedback(Resource *resource, uint32_t id, wl_resource *surface) override;
 };
 
-class LinuxDmaBufV1ClientBufferPrivate : public ClientBufferPrivate, public QtWaylandServer::wl_buffer
+class LinuxDmaBufV1ClientBufferPrivate : public QtWaylandServer::wl_buffer
 {
 public:
+    explicit LinuxDmaBufV1ClientBufferPrivate(LinuxDmaBufV1ClientBuffer *q);
+
+    LinuxDmaBufV1ClientBuffer *q;
     KWin::DmaBufAttributes attrs;
     quint32 flags;
     bool hasAlphaChannel = false;
 
 protected:
+    void buffer_destroy_resource(Resource *resource) override;
     void buffer_destroy(Resource *resource) override;
 };
 

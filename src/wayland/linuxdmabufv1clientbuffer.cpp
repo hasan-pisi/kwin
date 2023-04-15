@@ -169,9 +169,6 @@ void LinuxDmaBufParamsV1::zwp_linux_buffer_params_v1_create(Resource *resource, 
 
     clientBuffer->initialize(bufferResource);
     send_created(resource->handle, bufferResource);
-
-    DisplayPrivate *displayPrivate = DisplayPrivate::get(m_integration->display());
-    displayPrivate->registerClientBuffer(clientBuffer.release());
 }
 
 void LinuxDmaBufParamsV1::zwp_linux_buffer_params_v1_create_immed(Resource *resource,
@@ -215,9 +212,6 @@ void LinuxDmaBufParamsV1::zwp_linux_buffer_params_v1_create_immed(Resource *reso
     }
 
     clientBuffer->initialize(bufferResource);
-
-    DisplayPrivate *displayPrivate = DisplayPrivate::get(m_integration->display());
-    displayPrivate->registerClientBuffer(clientBuffer.release());
 }
 
 bool LinuxDmaBufParamsV1::test(Resource *resource, uint32_t width, uint32_t height)
@@ -281,7 +275,7 @@ bool LinuxDmaBufParamsV1::test(Resource *resource, uint32_t width, uint32_t heig
 }
 
 LinuxDmaBufV1ClientBufferIntegration::LinuxDmaBufV1ClientBufferIntegration(Display *display)
-    : ClientBufferIntegration(display)
+    : QObject(display)
     , d(new LinuxDmaBufV1ClientBufferIntegrationPrivate(this, display))
 {
 }
@@ -356,15 +350,24 @@ static bool testAlphaChannel(uint32_t drmFormat)
     }
 }
 
+LinuxDmaBufV1ClientBufferPrivate::LinuxDmaBufV1ClientBufferPrivate(LinuxDmaBufV1ClientBuffer *q)
+    : q(q)
+{
+}
+
+void LinuxDmaBufV1ClientBufferPrivate::buffer_destroy_resource(Resource *resource)
+{
+    q->drop();
+}
+
 void LinuxDmaBufV1ClientBufferPrivate::buffer_destroy(Resource *resource)
 {
     wl_resource_destroy(resource->handle);
 }
 
 LinuxDmaBufV1ClientBuffer::LinuxDmaBufV1ClientBuffer(KWin::DmaBufAttributes &&attrs, quint32 flags)
-    : ClientBuffer(std::make_unique<LinuxDmaBufV1ClientBufferPrivate>())
+    : d(std::make_unique<LinuxDmaBufV1ClientBufferPrivate>(this))
 {
-    Q_D(LinuxDmaBufV1ClientBuffer);
     d->attrs = std::move(attrs);
     d->flags = flags;
     d->hasAlphaChannel = testAlphaChannel(attrs.format);
@@ -374,49 +377,52 @@ LinuxDmaBufV1ClientBuffer::~LinuxDmaBufV1ClientBuffer() = default;
 
 void LinuxDmaBufV1ClientBuffer::initialize(wl_resource *resource)
 {
-    Q_D(LinuxDmaBufV1ClientBuffer);
     d->init(resource);
-    ClientBuffer::initialize(resource);
+    connect(this, &GraphicsBuffer::released, [this]() {
+        d->send_release();
+    });
 }
 
 quint32 LinuxDmaBufV1ClientBuffer::format() const
 {
-    Q_D(const LinuxDmaBufV1ClientBuffer);
     return d->attrs.format;
 }
 
 quint32 LinuxDmaBufV1ClientBuffer::flags() const
 {
-    Q_D(const LinuxDmaBufV1ClientBuffer);
     return d->flags;
 }
 
 const KWin::DmaBufAttributes &LinuxDmaBufV1ClientBuffer::attributes() const
 {
-    Q_D(const LinuxDmaBufV1ClientBuffer);
     return d->attrs;
 }
 
 QSize LinuxDmaBufV1ClientBuffer::size() const
 {
-    Q_D(const LinuxDmaBufV1ClientBuffer);
     return QSize(d->attrs.width, d->attrs.height);
 }
 
 bool LinuxDmaBufV1ClientBuffer::hasAlphaChannel() const
 {
-    Q_D(const LinuxDmaBufV1ClientBuffer);
     return d->hasAlphaChannel;
 }
 
 ClientBuffer::Origin LinuxDmaBufV1ClientBuffer::origin() const
 {
-    Q_D(const LinuxDmaBufV1ClientBuffer);
     if (d->flags & QtWaylandServer::zwp_linux_buffer_params_v1::flags_y_invert) {
         return ClientBuffer::Origin::BottomLeft;
     } else {
         return ClientBuffer::Origin::TopLeft;
     }
+}
+
+LinuxDmaBufV1ClientBuffer *LinuxDmaBufV1ClientBuffer::get(wl_resource *resource)
+{
+    if (auto bufferPrivate = resource_cast<LinuxDmaBufV1ClientBufferPrivate *>(resource)) {
+        return bufferPrivate->q;
+    }
+    return nullptr;
 }
 
 LinuxDmaBufV1Feedback::LinuxDmaBufV1Feedback(LinuxDmaBufV1ClientBufferIntegrationPrivate *integration)

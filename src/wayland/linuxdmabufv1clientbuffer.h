@@ -9,7 +9,6 @@
 #pragma once
 
 #include "clientbuffer.h"
-#include "clientbufferintegration.h"
 
 #include "core/dmabufattributes.h"
 
@@ -24,6 +23,8 @@ class RenderBackend;
 
 namespace KWaylandServer
 {
+
+class Display;
 class LinuxDmaBufV1ClientBufferPrivate;
 class LinuxDmaBufV1ClientBufferIntegrationPrivate;
 class LinuxDmaBufV1FeedbackPrivate;
@@ -37,7 +38,6 @@ class LinuxDmaBufV1FeedbackPrivate;
 class KWIN_EXPORT LinuxDmaBufV1ClientBuffer : public ClientBuffer
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(LinuxDmaBufV1ClientBuffer)
 
 public:
     LinuxDmaBufV1ClientBuffer(KWin::DmaBufAttributes &&attrs, quint32 flags);
@@ -51,8 +51,12 @@ public:
     bool hasAlphaChannel() const override;
     Origin origin() const override;
 
+    static LinuxDmaBufV1ClientBuffer *get(wl_resource *resource);
+
 private:
     void initialize(wl_resource *resource);
+
+    std::unique_ptr<LinuxDmaBufV1ClientBufferPrivate> d;
     friend class LinuxDmaBufParamsV1;
 };
 
@@ -90,7 +94,7 @@ private:
 /**
  * The LinuxDmaBufV1ClientBufferIntegration class provides support for linux dma-buf buffers.
  */
-class KWIN_EXPORT LinuxDmaBufV1ClientBufferIntegration : public ClientBufferIntegration
+class KWIN_EXPORT LinuxDmaBufV1ClientBufferIntegration : public QObject
 {
     Q_OBJECT
 
