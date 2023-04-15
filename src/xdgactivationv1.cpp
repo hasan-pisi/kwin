@@ -107,9 +107,9 @@ QString XdgActivationV1Integration::requestToken(bool isPrivileged, SurfaceInter
     }
     std::unique_ptr<KWaylandServer::PlasmaWindowActivationInterface> activation;
     if (showNotify) {
-        plasmaActivation = waylandServer()->plasmaActivationFeedback()->createActivation(appId);
+        activation = waylandServer()->plasmaActivationFeedback()->createActivation(appId);
     }
-    m_currentActivationToken.reset(new ActivationToken{newToken, isPrivileged, surface, serial, seat, appId, showNotify, std::move(plasmaActivation)});
+    m_currentActivationToken.reset(new ActivationToken{newToken, isPrivileged, surface, serial, seat, appId, showNotify, std::move(activation)});
     if (showNotify) {
         Q_EMIT effects->startupAdded(m_currentActivationToken->token, icon);
     }
